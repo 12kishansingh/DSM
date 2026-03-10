@@ -7,21 +7,17 @@
 #include "../headers/serverService.h"
 
 
-CommandMapServer dispatch_table[] = {
-    {"status", handle_status_check},
-    {"exit", handle_exit},
+CommandMapServer server_dispatch_table[] = {
+    {"status", handle_status_check},  
     {NULL, NULL} // Sentinel value to mark the end
-};
+};  
 
 
 
 void handle_status_check(int sock)
 {
-    char *status_message = "[Server] Connected to client:\n";
-    send(sock, status_message, strlen(status_message), 0);
+    char status = '1';
+    send(sock, &status, sizeof(status), 0);
 }
 
 
-void handle_exit(int sock){
-    exit(0);
-}
