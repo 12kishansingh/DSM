@@ -6,13 +6,14 @@ CommandMapClient client_dispatch_table[] = {
     {"status", handleStatus},
     {"exit", handle_exit},
     {"connect", handle_connect_client},
+    {"shareFile", handle_share_file_client},
     {NULL, NULL} // Sentinel value to mark the end
 };
 
 char buffer[BUFFER_SIZE] = {0};
 char command[BUFFER_SIZE] = {0};
 
-int sendToServer(char *command, char *SERVER_IP)
+int sendToServer(const char *command, const char *SERVER_IP)
 {
     int sock = 0, valread;
     struct sockaddr_in serv_addr;
@@ -45,7 +46,6 @@ int sendToServer(char *command, char *SERVER_IP)
     if (valread > 0)
     {
         buffer[valread] = '\0';
-        resume();
         established_connection = 1;
     }
 

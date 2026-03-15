@@ -19,7 +19,7 @@ typedef struct
 #define ANSI_COLOR_GREEN "\x1b[32m"
 #define ANSI_COLOR_RESET "\x1b[0m"
 
-#define BROADCAST_PORT 8080 // Ensure your server is listening on this UDP port
+#define PORT 8080 // Ensure your server is listening on this UDP port
 #define BUFFER_SIZE 1024
 
 extern char buffer[BUFFER_SIZE];
@@ -27,9 +27,11 @@ extern char command[BUFFER_SIZE];
 
 extern CommandMapClient client_dispatch_table[];
 
-int sendToServer(char *command, char *SERVER_IP);
+int sendToServer(const char *command, const char *SERVER_IP);
 
 void handle_exit(int sock);
+
+void handle_share_file_client(int sock);
 
 void handle_connect_client(int sock);
 

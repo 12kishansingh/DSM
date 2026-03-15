@@ -37,7 +37,7 @@ void *server_listener_thread_tcp(void *args)
                 if (strcmp(buffer, server_dispatch_table[i].cmd_name) == 0)
                 {
                     server_dispatch_table[i].handler(new_socket);
-                    wait(); // Wait for the command thread to signal that it's done processing
+                    // wait(); // Wait for the command thread to signal that it's done processing
                     found = 1;
                     break;
                 }
@@ -45,7 +45,7 @@ void *server_listener_thread_tcp(void *args)
 
             if (!found)
             {
-                char *err = "Unknown Command\n";
+                const char *err = "Unknown Command\n";
                 send(new_socket, err, strlen(err), 0);
             }
         }

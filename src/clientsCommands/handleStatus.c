@@ -2,8 +2,9 @@
 
 void handleStatus(int sock)
 {
-    char *SERVER_IP = "127.0.0.1"; // Assuming server is on localhost for testing
-    int result = sendToServer("status", SERVER_IP);
+    const char *SERVER_IP = "127.0.0.1"; // Assuming server is on localhost for testing
+    const char *command = "status";
+    int result = sendToServer(command, SERVER_IP);
     if (result)
     {
         printf("Server is active and responded to status check.\n");

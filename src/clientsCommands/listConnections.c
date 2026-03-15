@@ -35,7 +35,7 @@ void handle_list_connections(int unused_sock)
     // 4. Configure Broadcast Address
     memset(&broadcast_addr, 0, sizeof(broadcast_addr));
     broadcast_addr.sin_family = AF_INET;
-    broadcast_addr.sin_port = htons(BROADCAST_PORT);
+    broadcast_addr.sin_port = htons(PORT);
     broadcast_addr.sin_addr.s_addr = inet_addr("255.255.255.255");
 
     
