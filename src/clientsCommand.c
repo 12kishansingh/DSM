@@ -6,40 +6,19 @@ CommandMapClient client_dispatch_table[] = {
     {"status", handleStatus},
     {"exit", handle_exit},
     {"connect", handle_connect_client},
-    {"shareFile", handle_share_file_client},
     {NULL, NULL} // Sentinel value to mark the end
 };
 
 char buffer[BUFFER_SIZE] = {0};
 char command[BUFFER_SIZE] = {0};
 
-int sendToServer(const char *command, const char *SERVER_IP)
+int sendToServer(int sock, const char *command, const char *SERVER_IP)
 {
-    int sock = 0, valread;
-    struct sockaddr_in serv_addr;
-
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        return 0;
-    }
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(8080);
-
-    if (inet_pton(AF_INET, SERVER_IP, &serv_addr.sin_addr) <= 0)
-    {
-        return 0;
-    }
-
-    // Connect with error checking
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        return 0;
-    }
+    connect_socket(sock, SERVER_IP);
 
     send(sock, command, strlen(command), 0);
 
-    valread = read(sock, buffer, sizeof(buffer));
+    int valread = read(sock, buffer, sizeof(buffer));
 
     int established_connection = 0;
 
@@ -48,9 +27,45 @@ int sendToServer(const char *command, const char *SERVER_IP)
         buffer[valread] = '\0';
         established_connection = 1;
     }
-
-    close(sock);
+    else
+    {
+        printf("Failed to connect to server at %s\n", SERVER_IP);
+    }
     return established_connection;
+}
+
+int create_socket(void)
+{
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0)
+    {
+        perror("socket");
+        return -1;
+    }
+    return sock;
+}
+
+int connect_socket(int sock, const char *ip)
+{
+    struct sockaddr_in addr;
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(PORT);
+
+    if (inet_pton(AF_INET, ip, &addr.sin_addr) <= 0)
+    {
+        perror("inet_pton");
+        return -1;
+    }
+
+    if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+        perror("connect");
+        return -1;
+    }
+
+    return 0;
 }
 
 void *commands(void *args)
@@ -72,8 +87,15 @@ void *commands(void *args)
             {
                 if (strcmp(command, client_dispatch_table[i].cmd_name) == 0)
                 {
-                    client_dispatch_table[i].handler(0); // Pass 0 or any relevant argument if needed
+                    int sock = create_socket();
+                    if (sock < 0)
+                    {
+                        printf("Failed to create socket\n");
+                        break;
+                    }
+                    client_dispatch_table[i].handler(sock);
                     found = 1;
+                    close(sock);
                     break;
                 }
             }

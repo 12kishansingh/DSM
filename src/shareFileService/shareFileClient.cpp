@@ -59,8 +59,23 @@ bool send_all_uring(io_uring &ring, int sock, const char *data, size_t len)
     return true;
 }
 
-bool send_file(io_uring &ring, int sock, const char *filename)
-{
+bool send_file(int sock, const char *filename, const char *IP)
+{ 
+    if (sock < 0)
+    {
+        std::cerr << "Failed to create socket\n";
+        return false;
+    }
+    connect_socket(sock, IP);
+    io_uring ring;
+    int ret = io_uring_queue_init(QUEUE_DEPTH, &ring, 0);
+    if (ret < 0)
+    {
+        std::cerr << "io_uring_queue_init failed: " << strerror(-ret) << "\n";
+        close(sock);
+        return false;
+    }
+
     int file = open(filename, O_RDONLY);
     if (file < 0)
     {
@@ -78,8 +93,6 @@ bool send_file(io_uring &ring, int sock, const char *filename)
 
     uint64_t filesize = st.st_size;
     uint32_t namelen = strlen(filename);
-    
-
 
     if (!send_all_sync(sock, &namelen, sizeof(namelen)) ||
         !send_all_sync(sock, filename, namelen) ||
@@ -112,46 +125,22 @@ bool send_file(io_uring &ring, int sock, const char *filename)
     }
 
     close(file);
+    io_uring_queue_exit(&ring);
     return true;
 }
 
-void handle_share_file_client(int)
+void handle_share_file_client(int sock)
 {
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0)
-    {
-        perror("socket");
-        return;
-    }
-
-    sockaddr_in addr{};
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(PORT);
-
+    // TODO: [Implementation] If, only for sending file , or this function is called, Then I have to show through UI (the percentage of file sent) , and also the file name that is being sent, and the I.P to which it is being sent.
     printf("Enter the I.P that you want to share the file with: ");
     char IP[16];
     if (!fgets(IP, sizeof(IP), stdin))
     {
         std::cerr << "Failed to read IP address\n";
-        close(sock);
         return;
     }
 
     IP[strcspn(IP, "\n")] = 0;
-
-    if (inet_pton(AF_INET, IP, &addr.sin_addr) <= 0)
-    {
-        std::cerr << "Invalid IP address\n";
-        close(sock);
-        return;
-    }
-
-    if (connect(sock, (sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-        perror("connect");
-        close(sock);
-        return;
-    }
 
     const char *command = "shareFile";
     uint32_t cmdlen = strlen(command);
@@ -176,18 +165,7 @@ void handle_share_file_client(int)
 
     printf("Sharing file %s with %s...\n", filename, IP);
 
-    io_uring ring;
-    int ret = io_uring_queue_init(QUEUE_DEPTH, &ring, 0);
-    if (ret < 0)
-    {
-        std::cerr << "io_uring_queue_init failed: " << strerror(-ret) << "\n";
-        close(sock);
-        return;
-    }
-
-    bool file_sent = send_file(ring, sock, filename);
-
-    io_uring_queue_exit(&ring);
+    bool file_sent = send_file(sock , filename, IP);
 
     if (!file_sent)
     {

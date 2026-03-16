@@ -27,11 +27,13 @@ extern char command[BUFFER_SIZE];
 
 extern CommandMapClient client_dispatch_table[];
 
-int sendToServer(const char *command, const char *SERVER_IP);
+int sendToServer(int sock , const char *command, const char *SERVER_IP);
+
+int create_socket(void);
+
+int connect_socket(int sock, const char *ip);
 
 void handle_exit(int sock);
-
-void handle_share_file_client(int sock);
 
 void handle_connect_client(int sock);
 

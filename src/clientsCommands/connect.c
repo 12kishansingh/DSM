@@ -15,19 +15,10 @@ void handle_connect_client(int sock)
         ip_input[strcspn(ip_input, "\n")] = 0; // Remove the newline
     }
 
-    struct sockaddr_in serv_addr;
-
-    // 1. Open connection ONCE
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-        return;
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(8080);
-    inet_pton(AF_INET, ip_input, &serv_addr.sin_addr);
-
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    if (connect_socket(sock, ip_input) < 0)
     {
-        printf("Connection Failed\n");
+        printf("Failed to connect to server at %s\n", ip_input);
+        close(sock);
         return;
     }
 

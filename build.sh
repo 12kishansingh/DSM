@@ -4,7 +4,6 @@ g++ -I./headers \
     src/*.c \
     src/clientsCommands/*.c \
     src/serverCommands/*.c \
-    src/clientsCommands/*.cpp \
-    src/serverCommands/*.cpp \
+    src/shareFileService/*.cpp \
     -luring \
     -o main
