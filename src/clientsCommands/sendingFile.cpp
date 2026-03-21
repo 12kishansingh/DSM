@@ -16,7 +16,18 @@ void handle_send_file(int sock)
 
     IP[strcspn(IP, "\n")] = 0;
 
-    char filename[256] = "/home/vitthal/Downloads/gladiator.mkv";
+    char filename[256];
+
+    printf("Enter the file path that you want to share: ");
+
+    if (!fgets(filename, sizeof(filename), stdin))
+    {
+        perror("Failed to read the filename.");
+        close(sock);
+        return;
+    }
+
+    filename[strcspn(filename, "\n")] = 0;
 
     printf("Sharing file %s with %s...\n", filename, IP);
 
