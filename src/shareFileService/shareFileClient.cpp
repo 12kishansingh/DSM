@@ -56,6 +56,21 @@ int send_all_uring(io_uring &ring, int sock, const char *data, size_t len)
 int send_file(const char *filename, const char *IP, const char *folder)
 {
 
+    int file = open(filename, O_RDONLY);
+    if (file < 0)
+    {
+        perror("open");
+        return -1;
+    }
+
+    struct stat st{};
+    if (fstat(file, &st) < 0)
+    {
+        perror("fstat");
+        close(file);
+        return -1;
+    }
+
     // creating and connecting socket.
     int sock = create_socket();
     connect_socket(sock, IP);
@@ -74,6 +89,8 @@ int send_file(const char *filename, const char *IP, const char *folder)
         return -1;
     }
 
+    printf("\t\tWait till the receiver accept the connection request............\n");
+
     char response[128];
     int valread = read(sock, response, sizeof(response) - 1);
     response[valread] = '\0';
@@ -91,28 +108,13 @@ int send_file(const char *filename, const char *IP, const char *folder)
         return -1;
     }
 
-    int file = open(filename, O_RDONLY);
-    if (file < 0)
-    {
-        perror("open");
-        return -1;
-    }
-
-    struct stat st{};
-    if (fstat(file, &st) < 0)
-    {
-        perror("fstat");
-        close(file);
-        return -1;
-    }
-
     uint64_t filesize = st.st_size;
     uint32_t namelen = strlen(filename);
 
     int folderlen = strlen(folder);
 
-    if (!send_all_sync(sock, &folderlen, folderlen) ||
-        !send_all_sync(sock, &folder, sizeof(folder)) ||
+    if (!send_all_sync(sock, &folderlen, sizeof(folderlen)) ||
+        !send_all_sync(sock, folder, folderlen) ||
         !send_all_sync(sock, &namelen, sizeof(namelen)) ||
         !send_all_sync(sock, filename, namelen) ||
         !send_all_sync(sock, &filesize, sizeof(filesize)))
