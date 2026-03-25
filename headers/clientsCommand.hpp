@@ -51,6 +51,10 @@ void handleStatus();
 
 void handle_list_connections();
 
+void handle_distributive_systems();
+
+void sendRequest();
+
 void handle_send_file();
 
 void handle_receive_file();

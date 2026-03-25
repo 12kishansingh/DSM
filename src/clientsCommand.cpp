@@ -14,6 +14,7 @@ CommandMapClient client_dispatch_table[] = {
     {"connect", handle_connect_client},
     {"sendFile", handle_send_file},
     {"receiveFile", handle_receive_file},
+    {"runDistributiveSystems", handle_distributive_systems},
     {NULL, NULL}
 };
 
