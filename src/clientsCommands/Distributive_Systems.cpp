@@ -21,6 +21,21 @@ void freeMemory()
     free(ip_status);
 }
 
+int_fast64_t getFileSize(const char *filePath)
+{
+    struct stat st;
+
+    if (stat(filePath, &st) == 0)
+    {
+        return st.st_size;
+    }
+    else
+    {
+        perror("Failed to get file size");
+        return -1;
+    }
+}
+
 void *distributiveComputingOverNetwork(void *args)
 {
     struct distributiveComputingargs *dis_args = (struct distributiveComputingargs *)args;
