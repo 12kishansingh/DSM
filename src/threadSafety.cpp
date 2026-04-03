@@ -1,25 +1,24 @@
 #include "../headers/threadSafety.hpp"
 
-SharedData mesh_info = {
-    .lock = PTHREAD_MUTEX_INITIALIZER,
-    .cond = PTHREAD_COND_INITIALIZER,
-    .flag = 0};
+
+SharedData mesh_info;
 
 void wait()
 {
-    pthread_mutex_lock(&mesh_info.lock);
-    while (mesh_info.flag == 0)
-    {
-        pthread_cond_wait(&mesh_info.cond, &mesh_info.lock);
-    }
-    mesh_info.flag = 0; // Reset the flag for the next command
-    pthread_mutex_unlock(&mesh_info.lock);
+    std::unique_lock<std::mutex> lock(mesh_info.mtx);
+
+    mesh_info.cv.wait(lock, [] {
+        return mesh_info.flag == 1;
+    });
+
+    mesh_info.flag = 0; // reset
 }
 
 void resume()
 {
-    pthread_mutex_lock(&mesh_info.lock);
-    mesh_info.flag = 1;
-    pthread_cond_signal(&mesh_info.cond);
-    pthread_mutex_unlock(&mesh_info.lock);
+    {
+        std::lock_guard<std::mutex> lock(mesh_info.mtx);
+        mesh_info.flag = 1;
+    }
+    mesh_info.cv.notify_one();
 }

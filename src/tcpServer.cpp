@@ -41,20 +41,18 @@ void *server_listener_thread_tcp(void *args)
             {
                 if (strcmp(buffer, server_dispatch_table[i].cmd_name) == 0)
                 {
-                    pthread_t tid;
+                    int *sock_ptr = new int(new_socket); // replace malloc
 
-                    int *sock_ptr = (int *)malloc(sizeof(int));
-                    *sock_ptr = new_socket;
-
-                    if (pthread_create(&tid, NULL, server_dispatch_table[i].handler, sock_ptr) != 0)
+                    try
                     {
-                        perror("pthread_create failed");
-                        free(sock_ptr);
-                        close(new_socket);
+                        std::thread t(server_dispatch_table[i].handler, sock_ptr);
+                        t.detach(); // equivalent to pthread_detach
                     }
-                    else
+                    catch (...)
                     {
-                        pthread_detach(tid);
+                        perror("thread creation failed");
+                        delete sock_ptr;
+                        close(new_socket);
                     }
 
                     found = 1;
@@ -69,5 +67,4 @@ void *server_listener_thread_tcp(void *args)
             }
         }
     }
-    return NULL;
 }

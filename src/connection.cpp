@@ -3,6 +3,7 @@
 #include "../headers/serverService.hpp"
 #include "../headers/threadSafety.hpp"
 
+
 void connection()
 {
     int server_fd;
@@ -34,42 +35,27 @@ void connection()
         exit(EXIT_FAILURE);
     }
 
-    // 2. Thread Management
-    pthread_t server_tid, ui_tid, server_udp_tid;
+    // 2. Thread Management (std::thread)
 
-    // Create the UDP Discovery Responder Thread
-    if (pthread_create(&server_udp_tid, NULL, udp_discovery_responder, NULL) != 0)
-    {
-        perror("Failed to create UDP discovery responder thread");
-        return;
-    }
+    // UDP thread
+    std::thread server_udp_thread(udp_discovery_responder, nullptr);
 
+    // Server thread
     struct server_args s_args;
     s_args.server_fd = server_fd;
 
-    // Create the Server Thread
-    if (pthread_create(&server_tid, NULL, server_listener_thread_tcp, &s_args) != 0)
-    {
-        perror("Failed to create server thread");
-        return;
-    }
+    std::thread server_thread(server_listener_thread_tcp, &s_args);
 
-    // Create the UI/Command Thread
-
+    // UI thread
     struct commands_args c_args;
-
     c_args.mesh_info = &mesh_info;
 
-    if (pthread_create(&ui_tid, NULL, commands, &c_args) != 0)
-    {
-        perror("Failed to create UI thread");
-        return;
-    }
+    std::thread ui_thread(commands, &c_args);
 
-    // Wait for threads to finish (which they won't in this infinite loop)
-    pthread_join(server_tid, NULL);
-    pthread_join(ui_tid, NULL);
-    pthread_join(server_udp_tid, NULL);
+    // 3. Join threads
+    server_thread.join();
+    ui_thread.join();
+    server_udp_thread.join();
 
     close(server_fd);
 }

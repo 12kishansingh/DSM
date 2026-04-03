@@ -6,7 +6,6 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
-#include <pthread.h>
 
  
 void connection();

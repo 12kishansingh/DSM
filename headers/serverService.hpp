@@ -6,8 +6,9 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <functional>
 
-typedef void *(*server_command_handler_t)(void *);
+using server_command_handler_t = std::function<void(void *)>;
 
 typedef struct
 {

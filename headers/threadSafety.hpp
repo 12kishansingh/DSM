@@ -1,14 +1,17 @@
 #ifndef THREAD_SAFETY_H
 #define THREAD_SAFETY_H
 
-#include <pthread.h>
+#include <thread>
+#include <iostream>
+#include <mutex>
+#include <condition_variable>
 
-typedef struct
+struct SharedData
 {
-    pthread_mutex_t lock; // The lock
-    pthread_cond_t cond;  // The signaling mechanism (The "Doorbell")
-    int flag;             // Your status flag
-} SharedData;
+    std::mutex mtx; // The lock
+    std::condition_variable cv; // The signaling mechanism (The "Doorbell")
+    int flag = 0; // Your status flag
+};
 
 extern SharedData mesh_info;
 
