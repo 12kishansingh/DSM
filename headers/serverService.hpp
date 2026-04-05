@@ -24,10 +24,12 @@ struct server_args
     int server_fd;
 };
 
+#define IP_SIZE 16
+
 void *server_listener_thread_tcp(void *args);
 void *udp_discovery_responder(void *args);
 
-extern char client_ip[INET_ADDRSTRLEN];
+extern char client_ip[IP_SIZE];
 
 void *handle_status_check(void *arg);
 

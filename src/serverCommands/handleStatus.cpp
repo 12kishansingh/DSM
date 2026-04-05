@@ -4,7 +4,7 @@
 
 void *handle_status_check(void *arg)
 {
-    Socket socket = *(Socket *)arg;
+    TCP socket = *(TCP *)arg;
     if(OPEN_RECEIVE_FILE_CONNECTION)
     {
         socket.sendData(STATUS_MESSAGES[OPEN_SHAREFILE_CONNECTION], strlen(STATUS_MESSAGES[OPEN_SHAREFILE_CONNECTION]));
@@ -13,6 +13,6 @@ void *handle_status_check(void *arg)
     {
         socket.sendData(STATUS_MESSAGES[SUCCESS], strlen(STATUS_MESSAGES[SUCCESS]));
     }
-    delete (Socket *)arg;
+    delete (TCP *)arg;
     return NULL;
 }

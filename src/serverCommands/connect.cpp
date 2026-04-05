@@ -3,9 +3,9 @@
 
 void *handle_connect_server(void *arg)
 {
-    Socket socket = *(Socket *)arg;
+    TCP socket = *(TCP *)arg;
     char connect_msg = '1';
     socket.sendData(&connect_msg, sizeof(connect_msg));
-    delete (Socket *)arg; 
+    delete (TCP *)arg; 
     return NULL;
 }

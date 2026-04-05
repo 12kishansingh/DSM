@@ -22,6 +22,7 @@ typedef struct
 #define PORT 8080 // Ensure your server is listening on this UDP port
 #define BUFFER_SIZE 8192
 #define TOTAL_IPS 300
+#define IP_SIZE 16
 
 extern char buffer[BUFFER_SIZE];
 extern char command[BUFFER_SIZE];

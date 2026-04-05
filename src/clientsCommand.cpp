@@ -37,7 +37,7 @@ void clear_stdin()
 
 char *sendToServer(const char *command, const char *IP)
 {
-    Socket socket;
+    TCP socket;
     if (!socket.connect_socket(IP))
     {
         return (char *)STATUS_MESSAGES[CONNECTION_ERROR];

@@ -2,7 +2,6 @@
 #include "../../headers/shareFile.hpp"
 #include "../../headers/Status_codes.hpp"
 #include "../../headers/sockets.hpp"
-#include <direct.h>
 
 #define PORT 8080
 #define BLOCK_SIZE_ 65536

@@ -7,7 +7,7 @@
 #define QUEUE_DEPTH 64
 #define BLOCK_SIZE_ 65536
 
-int send_file_zero_copy(Socket *socket, int filefd, off_t start, off_t end,
+int send_file_zero_copy(TCP *socket, int filefd, off_t start, off_t end,
                         bool iscmdSendFile, TransferStats &stats, ProgressUI &ui)
 {
     off_t offset = start;
@@ -38,7 +38,7 @@ int send_file_zero_copy(Socket *socket, int filefd, off_t start, off_t end,
     return 1;
 }
 
-int send_all_sync(Socket *socket, const void *data, size_t len)
+int send_all_sync(TCP *socket, const void *data, size_t len)
 {
     const char *ptr = static_cast<const char *>(data);
     while (len > 0)
@@ -71,7 +71,7 @@ int send_file(const char *filename, const char *IP, const char *folder, const bo
     }
 
     // creating and connecting socket.
-    Socket socket;
+    TCP socket;
     socket.connect_socket(IP);
 
     const char *csend_all_syncommand = "shareFile";

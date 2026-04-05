@@ -5,17 +5,23 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/time.h>
+#endif
+
+using socket_t =
+#if defined(_WIN32) || defined(_WIN64)
+    SOCKET;
+#else
+    int;
 #endif
 
 class Socket
 {
-private:
-    using socket_t =
-#if defined(_WIN32) || defined(_WIN64)
-        SOCKET;
-#else
-        int;
-#endif
+protected:
     socket_t sockfd;
 
 public:
@@ -34,4 +40,19 @@ public:
     socket_t getSockfd() const { return sockfd; }
 
     void setIpFromSockaddr(struct sockaddr_in *addr);
+};
+
+class TCP : public Socket
+{
+public:
+    TCP();
+    TCP(socket_t fd) : Socket(fd) {}
+};
+
+class UDP : public Socket
+{
+
+public:
+    UDP();
+    UDP(socket_t fd) : Socket(fd) {}
 };

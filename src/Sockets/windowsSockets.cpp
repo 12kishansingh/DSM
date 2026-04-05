@@ -4,7 +4,6 @@
 #include "../../headers/clientsCommand.hpp"
 #include "../../headers/serverService.hpp"
 
-
 #include <iostream>
 #include <stdio.h>
 
@@ -14,11 +13,7 @@ char client_ip[INET_ADDRSTRLEN] = {0};
 
 Socket::Socket()
 {
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == INVALID_SOCKET)
-    {
-        std::cerr << "socket error: " << WSAGetLastError() << std::endl;
-    }
+    sockfd = -1;
 }
 
 Socket::Socket(socket_t fd)
@@ -75,7 +70,8 @@ bool Socket::connect_socket(const char *ip)
     return true;
 }
 
-int Socket::setupSocket(){
+int Socket::setupSocket()
+{
     struct sockaddr_in address;
     int opt = 1;
 
@@ -100,7 +96,6 @@ int Socket::setupSocket(){
     return sockfd;
 }
 
-
 int Socket::sendData(const char *data, size_t len)
 {
     return send(sockfd, data, (int)len, 0);
@@ -114,7 +109,7 @@ int Socket::receive(char *buffer, size_t len)
 // ❗ Windows doesn't have sendfile → manual implementation
 int Socket::sendFile(int filefd, off_t *offset, size_t chunk)
 {
-    
+
     char buffer[BUFFER_SIZE];
 
     int totalSent = 0;
@@ -146,6 +141,24 @@ void Socket::close()
 Socket::~Socket()
 {
     close();
+}
+
+TCP::TCP() : Socket()
+{
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == INVALID_SOCKET)
+    {
+        std::cerr << "socket error: " << WSAGetLastError() << std::endl;
+    }
+}
+
+UDP::UDP() : Socket()
+{
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd == INVALID_SOCKET)
+    {
+        std::cerr << "socket error: " << WSAGetLastError() << std::endl;
+    }
 }
 
 #endif

@@ -16,7 +16,7 @@ void handle_connect_client()
         ip_input[strcspn(ip_input, "\n")] = 0; // Remove the newline
     }
 
-    Socket socket;
+    TCP socket;
     if (!socket.connect_socket(ip_input))
     {
         printf("Failed to connect to server at %s\n", ip_input);

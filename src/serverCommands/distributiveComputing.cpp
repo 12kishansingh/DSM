@@ -4,7 +4,7 @@
 
 void *handle_distributive_systems(void *arg)
 {
-    Socket socket = *(Socket *)arg;
+    TCP socket = *(TCP *)arg;
 
     // This function will handle the distributive computing request from the client.
     // It will receive the code file and the train file from the client, and then it will execute the code on the server and send the result back to the client.
@@ -14,7 +14,7 @@ void *handle_distributive_systems(void *arg)
     socket.sendData(STATUS_MESSAGES[OPEN_SHAREFILE_CONNECTION], strlen(STATUS_MESSAGES[OPEN_SHAREFILE_CONNECTION])); 
 
 
-    delete (Socket *)arg; // Clean up the dynamically allocated socket object.
+    delete (TCP *)arg; // Clean up the dynamically allocated socket object.
 
     return NULL;
 }

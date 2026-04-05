@@ -13,14 +13,7 @@
 
 char client_ip[INET_ADDRSTRLEN] = {0};
 
-Socket::Socket()
-{
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0)
-    {
-        perror("socket");
-    }
-}
+
 
 Socket::Socket(socket_t fd)
 {
@@ -29,6 +22,11 @@ Socket::Socket(socket_t fd)
     {
         perror("socket");
     }
+}
+
+Socket::Socket()
+{
+    sockfd = -1;
 }
 
 void Socket::setIpFromSockaddr(struct sockaddr_in *address)
@@ -49,6 +47,29 @@ int Socket::acceptConnection(int server_fd)
     }
     setIpFromSockaddr(&address);
     return 1;
+}
+
+int Socket::setupSocket()
+{
+    struct sockaddr_in address;
+
+    memset(&address, 0, sizeof(address));
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    if (bind(sockfd, (struct sockaddr *)&address, sizeof(address)) < 0)
+    {
+        perror("bind");
+        return -1;
+    }
+
+    if (listen(sockfd, 10) < 0)
+    {
+        perror("listen");
+        return -1;
+    }
+    return sockfd;
 }
 
 bool Socket::connect_socket(const char *ip)
@@ -98,6 +119,23 @@ void Socket::close()
 Socket::~Socket()
 {
     close();
+}
+
+TCP::TCP() : Socket() {
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0)
+    {
+        perror("socket");
+    }
+}
+
+
+UDP::UDP() : Socket() {
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0)
+    {
+        perror("socket");
+    }
 }
 
 #endif

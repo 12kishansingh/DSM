@@ -6,7 +6,7 @@
 
 void connection()
 {
-    Socket socket;
+    TCP socket;
     int server_fd = socket.setupSocket();
     if (server_fd < 0)
     {

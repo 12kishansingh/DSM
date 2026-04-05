@@ -3,28 +3,23 @@
 
 void sendRequest()
 {
-    int sock;
+
+    UDP socket;
+
     struct sockaddr_in broadcast_addr;
     int broadcast_enable = 1;
-
-    // 1. Create UDP Socket (SOCK_DGRAM)
-    if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-    {
-        perror("Socket creation failed");
-        return;
-    }
-
-    // 2. Enable Broadcast permission on the socket
-    if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast_enable, sizeof(broadcast_enable)) < 0)
+    if (setsockopt(socket.getSockfd(), SOL_SOCKET, SO_BROADCAST, (const char *)&broadcast_enable, sizeof(broadcast_enable)) < 0)
     {
         perror("Setsockopt (SO_BROADCAST) failed");
-        close(sock);
+        socket.close();
         return;
     }
 
     // 3. Set a Timeout (So we don't wait forever if no one responds)
-    int timeout = 1000; // Wait 1 second for replies (in milliseconds)
-    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) < 0)
+    struct timeval timeout;
+    timeout.tv_sec = 1;  // 1 second
+    timeout.tv_usec = 0; // 0 microseconds
+    if (setsockopt(socket.getSockfd(), SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof(timeout)) < 0)
     {
         perror("Setsockopt (SO_RCVTIMEO) failed");
     }
@@ -37,9 +32,13 @@ void sendRequest()
 
     snprintf(command, sizeof(command), "status");
 
-    sendto(sock, command, strlen(command), 0, (struct sockaddr *)&broadcast_addr, sizeof(broadcast_addr));
+    if (sendto(socket.getSockfd(), command, strlen(command), 0, (struct sockaddr *)&broadcast_addr, sizeof(broadcast_addr)) < 0)
+    {
+        perror("sendto failed");
+        socket.close();
+        return;
+    }
 
-    // 6. Collect all responses
     struct sockaddr_in server_addr;
     socklen_t addr_len = sizeof(server_addr);
     int found_count = 0;
@@ -50,7 +49,7 @@ void sendRequest()
     if (!ip_list || !ip_status)
     {
         perror("Memory allocation failed");
-        close(sock);
+        socket.close();
         free(ip_list);
         free(ip_status);
         return;
@@ -60,7 +59,7 @@ void sendRequest()
 
     while (1)
     {
-        int valread = recvfrom(sock, buffer, sizeof(buffer) - 1, 0,
+        int valread = recvfrom(socket.getSockfd(), buffer, sizeof(buffer) - 1, 0,
                                (struct sockaddr *)&server_addr, &addr_len);
 
         if (valread < 0)
@@ -80,24 +79,24 @@ void sendRequest()
 
         memcpy(receivedStatus, buffer, valread + 1);
 
-        char *ip = (char *)malloc(IP_LENGTH);
+        char *ip = (char *)malloc(IP_SIZE);
         if (!ip)
         {
             free(receivedStatus);
             break;
         }
 
-        strncpy(ip, inet_ntoa(server_addr.sin_addr), IP_LENGTH);
-        ip[IP_LENGTH - 1] = '\0';
+        strncpy(ip, inet_ntoa(server_addr.sin_addr), IP_SIZE - 1);
+        ip[IP_SIZE - 1] = '\0';
 
         ip_status[count] = receivedStatus;
         ip_list[count] = ip;
         count++;
     }
 
-    close(sock);
+    socket.close();
 
-    // ✅ NULL terminate safely
+    // NULL terminate safely
     if (count < MAX_IPS)
     {
         ip_list[count] = NULL;

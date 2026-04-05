@@ -15,6 +15,14 @@
 #define write_fd write
 #endif
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <direct.h>
+#define _mkdir(dir) mkdir(dir)
+#else
+#include <sys/stat.h>
+#define _mkdir(dir) mkdir(dir, 0755)
+#endif
+
 int send_all_sync(int sock, const void *data, size_t len);
 
 int send_file(const char *filename, const char *IP, const char *folder, const bool iscmdSendFile);
