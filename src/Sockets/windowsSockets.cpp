@@ -9,7 +9,7 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-char client_ip[INET_ADDRSTRLEN] = {0};
+char client_ip[IP_SIZE] = {0};
 
 Socket::Socket()
 {

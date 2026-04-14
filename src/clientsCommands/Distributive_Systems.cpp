@@ -42,33 +42,33 @@ int_fast64_t getFileSize(const char *filePath)
     }
 }
 
-int_fast64_t adjustToNextLine(int fd, int_fast64_t pos, int_fast64_t fileSize)
-{
-    if (pos >= fileSize)
-        return fileSize;
+// int_fast64_t adjustToNextLine(int fd, int_fast64_t pos, int_fast64_t fileSize)
+// {
+//     if (pos >= fileSize)
+//         return fileSize;
 
-    const size_t BUF_SIZE = 4096;
-    char buffer[BUF_SIZE];
+//     const size_t BUF_SIZE = 4096;
+//     char buffer[BUF_SIZE];
 
-    while (pos < fileSize)
-    {
-        ssize_t bytesRead = pread(fd, buffer, BUF_SIZE, pos);
-        if (bytesRead <= 0)
-            break;
+//     while (pos < fileSize)
+//     {
+//         ssize_t bytesRead = pread(fd, buffer, BUF_SIZE, pos);
+//         if (bytesRead <= 0)
+//             break;
 
-        for (ssize_t i = 0; i < bytesRead; i++)
-        {
-            if (buffer[i] == '\n')
-            {
-                return pos + i + 1; // next line start
-            }
-        }
+//         for (ssize_t i = 0; i < bytesRead; i++)
+//         {
+//             if (buffer[i] == '\n')
+//             {
+//                 return pos + i + 1; // next line start
+//             }
+//         }
 
-        pos += bytesRead;
-    }
+//         pos += bytesRead;
+//     }
 
-    return fileSize;
-}
+//     return fileSize;
+// }
 
 void divideFileIntoChunks(const char *trainfilepath, int totalConnections)
 {
@@ -107,7 +107,7 @@ void divideFileIntoChunks(const char *trainfilepath, int totalConnections)
         }
         else
         {
-            adjusted_end = adjustToNextLine(fd, tentative_end, fileSize);
+            // adjusted_end = adjustToNextLine(fd, tentative_end, fileSize);
         }
 
         int_fast64_t final_chunk = adjusted_end - offset;
