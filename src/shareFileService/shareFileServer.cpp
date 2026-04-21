@@ -2,6 +2,7 @@
 #include "../../headers/shareFile.hpp"
 #include "../../headers/Status_codes.hpp"
 #include "../../headers/sockets.hpp"
+#include "../../headers/threadSafety.hpp"
 
 #define PORT 8080
 #define BLOCK_SIZE_ 65536
@@ -44,7 +45,7 @@ int recv_all(Socket *socket, void *buf, size_t len)
 }
 
 // Receive file metadata and file data
-void receive_file(Socket *socket, int askclientShareFile)
+int receive_file(Socket *socket, int askclientShareFile)
 {
     uint32_t namelen;
 
@@ -54,14 +55,14 @@ void receive_file(Socket *socket, int askclientShareFile)
     if (!recv_all(socket, &folderlen, sizeof(folderlen)))
     {
         std::cerr << "Failed to receive folder length\n";
-        return;
+        return -1;
     }
 
     // Validate folder length
     if (folderlen == 0 || folderlen >= 256)
     {
         std::cerr << "Invalid folder length\n";
-        return;
+        return -1;
     }
 
     char folder[256];
@@ -70,7 +71,7 @@ void receive_file(Socket *socket, int askclientShareFile)
     if (!recv_all(socket, folder, folderlen))
     {
         std::cerr << "Failed to receive folder name\n";
-        return;
+        return -1;
     }
 
     folder[folderlen] = '\0';
@@ -78,14 +79,14 @@ void receive_file(Socket *socket, int askclientShareFile)
     if (!recv_all(socket, &namelen, sizeof(namelen)))
     {
         std::cerr << "Failed to receive filename length\n";
-        return;
+        return -1;
     }
 
     // Validate filename length
     if (namelen == 0 || namelen >= 256)
     {
         std::cerr << "Invalid filename length: " << namelen << "\n";
-        return;
+        return -1;
     }
 
     char filename[256];
@@ -94,7 +95,7 @@ void receive_file(Socket *socket, int askclientShareFile)
     if (!recv_all(socket, filename, namelen))
     {
         std::cerr << "Failed to receive filename\n";
-        return;
+        return -1;
     }
 
     // Add null terminator
@@ -106,7 +107,7 @@ void receive_file(Socket *socket, int askclientShareFile)
     if (!recv_all(socket, &filesize, sizeof(filesize)))
     {
         std::cerr << "Failed to receive filesize\n";
-        return;
+        return -1;
     }
 
     char cwd[1024];
@@ -124,7 +125,7 @@ void receive_file(Socket *socket, int askclientShareFile)
     if (strstr(folder, ".."))
     {
         std::cerr << "Invalid folder path\n";
-        return;
+        return -1;
     }
 
     // Build folder path
@@ -139,22 +140,23 @@ void receive_file(Socket *socket, int askclientShareFile)
     base = (base != nullptr) ? base + 1 : filename;
 
     // Build final file path
-    char outpath[512];
-    int ret = snprintf(outpath, sizeof(outpath), "%s/%s", folder_path, base);
+    int ret = snprintf(shared_outpath, sizeof(shared_outpath), "%s/%s", folder_path, base);
 
-    if (ret < 0 || ret >= (int)sizeof(outpath))
+    if (ret < 0 || ret >= (int)sizeof(shared_outpath))
     {
         std::cerr << "Path too long\n";
-        return;
+        return -1;
     }
 
+    
+
     // Open output file
-    int file = open(outpath, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    int file = open(shared_outpath, O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (file < 0)
     {
         perror("open");
-        std::cerr << "Tried to create file at: " << outpath << "\n";
-        return;
+        std::cerr << "Tried to create file at: " << shared_outpath << "\n";
+        return -1;
     }
 
     char buffer[BLOCK_SIZE_];
@@ -182,6 +184,7 @@ void receive_file(Socket *socket, int askclientShareFile)
         if (bytes <= 0)
         {
             std::cerr << "Socket closed or recv failed while receiving file data\n";
+            return -1;
             break;
         }
 
@@ -191,7 +194,7 @@ void receive_file(Socket *socket, int askclientShareFile)
         {
             perror("write");
             close(file);
-            return;
+            return -1;
         }
 
         received += bytes;
@@ -215,21 +218,19 @@ void receive_file(Socket *socket, int askclientShareFile)
     {
         if (askclientShareFile)
         {
-            std::cout << "File received successfully: " << outpath
+            std::cout << "File received successfully: " << shared_outpath
                       << " (" << filesize << " bytes)\n";
         }
 
-        const char *msg = "SUCCESS";
-
         // Send success reply to client
-        socket->sendData(msg, strlen(msg));
+        socket->sendData(STATUS_MESSAGES[SUCCESS], strlen(STATUS_MESSAGES[SUCCESS]));
     }
     else
     {
-        std::cout << "Incomplete file received: " << outpath
+        std::cout << "Incomplete file received: " << shared_outpath
                   << " (" << received << "/" << filesize << " bytes)\n";
     }
-    OPEN_RECEIVE_FILE_CONNECTION = 0; // Reset the flag after handling the file transfer
+    return 0;
 }
 
 bool checkChar(char choice)
@@ -296,6 +297,9 @@ void *handle_share_file_server(void *arg)
     {
         client_socket->sendData(STATUS_MESSAGES[REJECT_CONNECTION], strlen(STATUS_MESSAGES[REJECT_CONNECTION]));
     }
+
+    OPEN_RECEIVE_FILE_CONNECTION = 0;
+
     delete client_socket;
     return NULL;
 }

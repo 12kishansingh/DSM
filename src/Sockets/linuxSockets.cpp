@@ -13,8 +13,6 @@
 
 char client_ip[INET_ADDRSTRLEN] = {0};
 
-
-
 Socket::Socket(socket_t fd)
 {
     sockfd = fd;
@@ -52,6 +50,13 @@ int Socket::acceptConnection(int server_fd)
 int Socket::setupSocket()
 {
     struct sockaddr_in address;
+
+    int opt = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+    {
+        perror("setsockopt");
+        return -1;
+    }
 
     memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
@@ -121,7 +126,8 @@ Socket::~Socket()
     close();
 }
 
-TCP::TCP() : Socket() {
+TCP::TCP() : Socket()
+{
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
     {
@@ -129,8 +135,8 @@ TCP::TCP() : Socket() {
     }
 }
 
-
-UDP::UDP() : Socket() {
+UDP::UDP() : Socket()
+{
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0)
     {

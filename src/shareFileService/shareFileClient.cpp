@@ -52,9 +52,8 @@ int send_all_sync(TCP *socket, const void *data, size_t len)
     return true;
 }
 
-int send_file(const char *filename, const char *IP, const char *folder, const bool iscmdSendFile = 0, off_t offset, int_fast64_t chunk)
+int send_file(TCP *socket, const char *filename, const char *IP, const char *folder, const bool iscmdSendFile, off_t offset, int_fast64_t chunk)
 {
-
     int file = open(filename, O_RDONLY);
     if (file < 0)
     {
@@ -70,6 +69,54 @@ int send_file(const char *filename, const char *IP, const char *folder, const bo
         return -1;
     }
 
+    int_fast64_t filesize;
+    if (chunk == (int_fast64_t)-1)
+    {
+        filesize = st.st_size;
+    }
+    else
+    {
+        filesize = chunk;
+    }
+
+    uint32_t namelen = strlen(filename);
+
+    int folderlen = strlen(folder);
+
+    if (!send_all_sync(socket, &folderlen, sizeof(folderlen)) ||
+        !send_all_sync(socket, folder, folderlen) ||
+        !send_all_sync(socket, &namelen, sizeof(namelen)) ||
+        !send_all_sync(socket, filename, namelen) ||
+        !send_all_sync(socket, &filesize, sizeof(filesize)))
+    {
+        std::cerr << "Failed to send file metadata\n";
+        close(file);
+        return -1;
+    }
+
+    TransferStats stats;
+    ProgressUI ui;
+
+    if (iscmdSendFile)
+        stats.start(filesize);
+
+    if (send_file_zero_copy(socket, file, offset, offset + filesize,
+                            iscmdSendFile, stats, ui) < 0)
+    {
+        std::cerr << "Failed to send file using sendfile\n";
+        close(file);
+        return -1;
+    }
+
+    if (iscmdSendFile)
+    {
+        ui.done();
+    }
+    return 1;
+}
+
+int send_file(const char *filename, const char *IP, const char *folder, const bool iscmdSendFile, off_t offset, int_fast64_t chunk)
+{
     // creating and connecting socket.
     TCP socket;
     socket.connect_socket(IP);
@@ -107,65 +154,26 @@ int send_file(const char *filename, const char *IP, const char *folder, const bo
         return -1;
     }
 
-    valread = socket.receive(response, sizeof(response) - 1);
-    if (valread <= 0)
-    {
-        perror("Failed to receive response");
-        return -1;
-    }
-    response[valread] = '\0';
-    if (strcmp(response, STATUS_MESSAGES[SUCCESS]) == 0)
-    {
-        printf("\t\nClient accepted connection\n");
-    }
-    else
-    {
-        printf("\t\nClient rejected connection\n");
-        return -1;
-    }
-
-    int_fast64_t filesize;
-    if (chunk == (int_fast64_t)-1)
-    {
-        filesize = st.st_size;
-    }
-    else
-    {
-        filesize = chunk;
-    }
-
-    uint32_t namelen = strlen(filename);
-
-    int folderlen = strlen(folder);
-
-    if (!send_all_sync(&socket, &folderlen, sizeof(folderlen)) ||
-        !send_all_sync(&socket, folder, folderlen) ||
-        !send_all_sync(&socket, &namelen, sizeof(namelen)) ||
-        !send_all_sync(&socket, filename, namelen) ||
-        !send_all_sync(&socket, &filesize, sizeof(filesize)))
-    {
-        std::cerr << "Failed to send file metadata\n";
-        close(file);
-        return -1;
-    }
-
-    TransferStats stats;
-    ProgressUI ui;
-
-    if (iscmdSendFile)
-        stats.start(filesize);
-
-    if (send_file_zero_copy(&socket, file, offset, offset + filesize,
-                            iscmdSendFile, stats, ui) < 0)
-    {
-        std::cerr << "Failed to send file using sendfile\n";
-        close(file);
-        return -1;
-    }
-
     if (iscmdSendFile)
     {
-        ui.done();
+        char response[128];
+        int valread = socket.receive(response, sizeof(response) - 1);
+        if (valread <= 0)
+        {
+            perror("Failed to receive response");
+            return -1;
+        }
+        response[valread] = '\0';
+        if (strcmp(response, STATUS_MESSAGES[SUCCESS]) == 0)
+        {
+            printf("\t\nClient accepted connection\n");
+        }
+        else
+        {
+            printf("\t\nClient rejected connection\n");
+            return -1;
+        }
     }
-    return 1;
+
+    return send_file(&socket, filename, IP, folder, iscmdSendFile, offset, chunk);
 }

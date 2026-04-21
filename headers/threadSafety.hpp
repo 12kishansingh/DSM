@@ -12,6 +12,9 @@ struct SharedData
     std::condition_variable cv; // The signaling mechanism (The "Doorbell")
     int flag = 0; // Your status flag
 };
+// Shared data
+extern char shared_outpath[128];
+extern int_fast64_t sharedReceivedBytes;
 
 extern SharedData mesh_info;
 

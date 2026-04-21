@@ -6,7 +6,7 @@
 #include <cstring>
 #include <chrono>
 #include <iomanip>
-
+#include "sockets.hpp"
 #if defined(_WIN32) || defined(_WIN64)
 #include <io.h>
 #define write_fd _write
@@ -25,13 +25,26 @@
 
 int send_all_sync(int sock, const void *data, size_t len);
 
-int send_file(const char *filename, const char *IP, const char *folder, const bool iscmdSendFile, off_t offset = 0, int_fast64_t chunk = -1);
+int send_file(const char *filename, const char *IP, const char *folder, const bool iscmdSendFile = 0, off_t offset = 0, int_fast64_t chunk = -1);
+
+int send_file(TCP *socket, const char *filename, const char *IP, const char *folder, const bool iscmdSendFile = 0, off_t offset = 0, int_fast64_t chunk = -1);
 
 int recv_all(int sock, void *buf, size_t len);
 
 void create_dirs(const char *path);
 
-void receive_file(int sock);
+int receive_file(Socket *socket, int askclientShareFile);
+
+struct send_file_args
+{
+    const char *filePath;
+    const char *IP;
+    const char *tag;
+    bool iscmdSendFile;
+    long int offset;
+    long int chunk_size;
+    bool use_chunk;
+};
 
 struct TransferStats
 {
