@@ -10,7 +10,7 @@
 off_t *train_offset;
 int_fast64_t *train_chunk_size;
 
-char reducerPath[128] = "/home/vitthal/dsm/src/clientsCommands/DistributiveComputing/Reducers/sum.cpp";
+char reducerPath[128] = "/home/vitthal/dsm/experimental/main.cpp";
 
 // ---------------------- UTIL ----------------------
 

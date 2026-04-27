@@ -148,8 +148,6 @@ int receive_file(Socket *socket, int askclientShareFile)
         return -1;
     }
 
-    
-
     // Open output file
     int file = open(shared_outpath, O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (file < 0)
@@ -221,14 +219,21 @@ int receive_file(Socket *socket, int askclientShareFile)
             std::cout << "File received successfully: " << shared_outpath
                       << " (" << filesize << " bytes)\n";
         }
-
+        
+        if(strcmp(folder , "code") == 0){
+            resume();
+        }
         // Send success reply to client
         socket->sendData(STATUS_MESSAGES[SUCCESS], strlen(STATUS_MESSAGES[SUCCESS]));
+
     }
     else
     {
-        std::cout << "Incomplete file received: " << shared_outpath
-                  << " (" << received << "/" << filesize << " bytes)\n";
+        if (askclientShareFile)
+        {
+            std::cout << "File transfer incomplete: " << shared_outpath
+                      << " (" << received << "/" << filesize << " bytes)\n";
+        }
     }
     return 0;
 }
