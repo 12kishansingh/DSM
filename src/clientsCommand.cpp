@@ -165,8 +165,6 @@ const char *find_closest_command(const char *input)
 
 void *commands(void *args)
 {
-    SharedData *mesh_info = ((struct commands_args *)args)->mesh_info;
-
     while (1)
     {
         printf(ANSI_COLOR_GREEN "\n> " ANSI_COLOR_RESET);

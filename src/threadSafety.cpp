@@ -1,24 +1,26 @@
 #include "../headers/threadSafety.hpp"
 
-SharedData mesh_info;
- char shared_outpath[128] = {0};
-int_fast64_t sharedReceivedBytes = 0;
+SharedData mesh_info_1;
+SharedData mesh_info_2;
+char shared_outpath[128] = {0};
+int_fast64_t processedBytes = 0;
+bool isProcessing = true;
 
-void wait()
+void wait(SharedData &data)
 {
-    std::unique_lock<std::mutex> lock(mesh_info.mtx);
+    std::unique_lock<std::mutex> lock(data.mtx);
 
-    mesh_info.cv.wait(lock, []
-                      { return mesh_info.flag == 1; });
+    data.cv.wait(lock, [&]
+                 { return data.flag == 1; });
 
-    mesh_info.flag = 0; // reset
+    data.flag = 0;
 }
 
-void resume()
+void resume(SharedData &data)
 {
     {
-        std::lock_guard<std::mutex> lock(mesh_info.mtx);
-        mesh_info.flag = 1;
+        std::lock_guard<std::mutex> lock(data.mtx);
+        data.flag = 1;
     }
-    mesh_info.cv.notify_one();
+    data.cv.notify_one();
 }

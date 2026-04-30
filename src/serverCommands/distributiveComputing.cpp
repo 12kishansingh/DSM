@@ -8,12 +8,151 @@
 #include <atomic>
 #include <future>
 
+long long distributiveComputing(int64_t offset, int64_t remaining, int fd)
+{
+    static const char *binaryPath = "/tmp/local_exec";
+    // ---------------- Pipes ----------------
+    int inpipe[2];
+    int outpipe[2];
 
-long long distributiveComputing()
+    if (pipe(inpipe) == -1 || pipe(outpipe) == -1)
+    {
+        perror("pipe failed");
+        return -1;
+    }
+
+    pid_t pid = fork();
+    if (pid == -1)
+    {
+        perror("fork failed");
+        return -1;
+    }
+
+    if (pid == 0)
+    {
+        // CHILD
+
+        // stdin
+        if (dup2(inpipe[0], STDIN_FILENO) == -1)
+        {
+            perror("dup2 stdin failed");
+            _exit(1);
+        }
+
+        // stdout
+        if (dup2(outpipe[1], STDOUT_FILENO) == -1)
+        {
+            perror("dup2 stdout failed");
+            _exit(1);
+        }
+
+        // close everything
+        close(inpipe[0]);
+        close(inpipe[1]);
+        close(outpipe[0]);
+        close(outpipe[1]);
+
+        if (access(binaryPath, X_OK) != 0)
+        {
+            perror("binary not executable");
+            _exit(1);
+        }
+
+        execl(binaryPath, binaryPath, NULL);
+
+        perror("exec failed");
+        _exit(1);
+    }
+
+    // ---------------- PARENT ----------------
+    close(inpipe[0]);
+    close(outpipe[1]);
+
+    const size_t BUF_SIZE = 65536;
+    char buffer[BUF_SIZE];
+
+    while (remaining > 0)
+    {
+        ssize_t to_read = std::min((int64_t)BUF_SIZE, remaining);
+
+        ssize_t bytesRead = pread(fd, buffer, to_read, offset);
+        if (bytesRead <= 0)
+        {
+            perror("pread failed");
+            break;
+        }
+
+        ssize_t total_written = 0;
+        while (total_written < bytesRead)
+        {
+            ssize_t w = write(inpipe[1],
+                              buffer + total_written,
+                              bytesRead - total_written);
+
+            if (w <= 0)
+            {
+                perror("write failed");
+                close(fd);
+                close(inpipe[1]);
+                close(outpipe[0]);
+                return -1;
+            }
+            total_written += w;
+        }
+
+        offset += bytesRead;
+        remaining -= bytesRead;
+    }
+
+    close(inpipe[1]); // EOF to child
+
+    // ---------------- READ OUTPUT ----------------
+    std::string output;
+    char buf[256];
+
+    while (true)
+    {
+        ssize_t n = read(outpipe[0], buf, sizeof(buf));
+        if (n == 0)
+            break;
+        if (n < 0)
+        {
+            perror("read failed");
+            break;
+        }
+        output.append(buf, n);
+    }
+
+    close(outpipe[0]);
+
+    int status;
+    waitpid(pid, &status, 0);
+
+    if (!WIFEXITED(status))
+    {
+        fprintf(stderr, "Child crashed\n");
+        return -1;
+    }
+
+    // ---------------- PARSE RESULT ----------------
+    long long result = 0;
+    try
+    {
+        result = std::stoll(output);
+    }
+    catch (...)
+    {
+        fprintf(stderr, "Invalid output: %s\n", output.c_str());
+        return -1;
+    }
+
+    return result;
+}
+
+void compileCode()
 {
     static const char *binaryPath = "/tmp/local_exec";
 
-    // ---------------- STEP 1: Compile ONCE ----------------
     static std::once_flag compile_flag;
 
     const char *codepath = "received_files/code/main.cpp";
@@ -51,160 +190,6 @@ long long distributiveComputing()
             fprintf(stderr, "Compilation failed\n");
             exit(1);
         } });
-
-    while (true)
-        ;
-
-    // ---------------- STEP 2: Pipes ----------------
-    // int inpipe[2];
-    // int outpipe[2];
-
-    // if (pipe(inpipe) == -1 || pipe(outpipe) == -1)
-    // {
-    //     perror("pipe failed");
-    //     return -1;
-    // }
-
-    // pid_t pid = fork();
-    // if (pid == -1)
-    // {
-    //     perror("fork failed");
-    //     return -1;
-    // }
-
-    // if (pid == 0)
-    // {
-    //     // CHILD
-
-    //     // stdin
-    //     if (dup2(inpipe[0], STDIN_FILENO) == -1)
-    //     {
-    //         perror("dup2 stdin failed");
-    //         _exit(1);
-    //     }
-
-    //     // stdout
-    //     if (dup2(outpipe[1], STDOUT_FILENO) == -1)
-    //     {
-    //         perror("dup2 stdout failed");
-    //         _exit(1);
-    //     }
-
-    //     // close everything
-    //     close(inpipe[0]);
-    //     close(inpipe[1]);
-    //     close(outpipe[0]);
-    //     close(outpipe[1]);
-
-    //     if (access(binaryPath, X_OK) != 0)
-    //     {
-    //         perror("binary not executable");
-    //         _exit(1);
-    //     }
-
-    //     execl(binaryPath, binaryPath, NULL);
-
-    //     perror("exec failed");
-    //     _exit(1);
-    // }
-
-    // // ---------------- PARENT ----------------
-    // close(inpipe[0]);
-    // close(outpipe[1]);
-
-    // const char *trainfilepath = "received_files/train/test.txt";
-
-    // int fd = open(trainfilepath, O_RDONLY);
-    // if (fd < 0)
-    // {
-    //     perror("file open failed");
-    //     return -1;
-    // }
-
-    // const size_t BUF_SIZE = 65536;
-    // char buffer[BUF_SIZE];
-
-    // int64_t remaining = dis_args->train_chunk_size;
-    // int64_t offset = dis_args->train_offset;
-
-    // while (remaining > 0)
-    // {
-    //     ssize_t to_read = std::min((int64_t)BUF_SIZE, remaining);
-
-    //     ssize_t bytesRead = pread(fd, buffer, to_read, offset);
-    //     if (bytesRead <= 0)
-    //     {
-    //         perror("pread failed");
-    //         break;
-    //     }
-
-    //     ssize_t total_written = 0;
-    //     while (total_written < bytesRead)
-    //     {
-    //         ssize_t w = write(inpipe[1],
-    //                           buffer + total_written,
-    //                           bytesRead - total_written);
-
-    //         if (w <= 0)
-    //         {
-    //             perror("write failed");
-    //             close(fd);
-    //             close(inpipe[1]);
-    //             close(outpipe[0]);
-    //             return -1;
-    //         }
-    //         total_written += w;
-    //     }
-
-    //     offset += bytesRead;
-    //     remaining -= bytesRead;
-    // }
-
-    // close(fd);
-    // close(inpipe[1]); // EOF to child
-
-    // // ---------------- READ OUTPUT ----------------
-    // std::string output;
-    // char buf[256];
-
-    // while (true)
-    // {
-    //     ssize_t n = read(outpipe[0], buf, sizeof(buf));
-    //     if (n == 0)
-    //         break;
-    //     if (n < 0)
-    //     {
-    //         perror("read failed");
-    //         break;
-    //     }
-    //     output.append(buf, n);
-    // }
-
-    // close(outpipe[0]);
-
-    // int status;
-    // waitpid(pid, &status, 0);
-
-    // if (!WIFEXITED(status))
-    // {
-    //     fprintf(stderr, "Child crashed\n");
-    //     return -1;
-    // }
-
-    // // ---------------- PARSE RESULT ----------------
-    // long long result = 0;
-    // try
-    // {
-    //     result = std::stoll(output);
-    // }
-    // catch (...)
-    // {
-    //     fprintf(stderr, "Invalid output: %s\n", output.c_str());
-    //     return -1;
-    // }
-
-    // return result;
-    return 0;
 }
 
 void *handle_distributive_systems(void *arg)
@@ -220,12 +205,40 @@ void *handle_distributive_systems(void *arg)
     int askClientShareFile = 1;
 
     // Wait for the client to finish sending the code file..
-    wait();
-    // The client have send the code file..
-    int result = distributiveComputing();
+    wait(mesh_info_1);
+    compileCode();
+    // Waiting until , a small part of the file is received..
+    wait(mesh_info_2);
+    // Recieved the file, now we can start processing it in chunks and send the result back to client.
 
+    const char *trainfilepath = "received_files/train/test.txt";
+
+    int fd = open(trainfilepath, O_RDONLY);
+    if (fd < 0)
+    {
+        perror("file open failed");
+    }
+
+    int final_result = 0;
+    int_fast64_t offset = 0;
+    int_fast64_t remaining = 0;
+    while (true)
+    {
+        isProcessing = false;
+        wait(mesh_info_2);
+        if ((processedBytes - offset) == 0)
+            break;
+        isProcessing = true;
+        remaining = processedBytes - offset;
+        final_result ^= distributiveComputing(offset, remaining, fd);
+        offset += remaining;
+    }
+
+    socket->sendData(std::to_string(final_result).c_str(),
+                     std::to_string(final_result).length());
     OPEN_RECEIVE_FILE_CONNECTION = 0;
 
+    close(fd);
     delete socket;
     return NULL;
 }

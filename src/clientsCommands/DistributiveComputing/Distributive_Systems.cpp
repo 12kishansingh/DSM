@@ -170,7 +170,24 @@ long long distributiveComputingOverNetwork(void *args)
 {
     auto *dis_args = static_cast<distributiveComputingargs *>(args);
 
-    char *res = sendToServer("distributiveComputing", dis_args->IP);
+    char message[32] = "distributiveComputing";
+
+    TCP socket;
+    if (!socket.connect_socket(dis_args->IP))
+    {
+        printf("Connection failed for IP: %s\n", dis_args->IP);
+        return -1;
+    }
+
+    socket.sendData(message, strlen(message));
+    char res[256];
+    int n = socket.receive(res, sizeof(res) - 1);
+    if (n <= 0)
+    {
+        printf("Failed to receive response from IP: %s\n", dis_args->IP);
+        socket.close();
+        return -1;
+    }
 
     if (strcmp(res, STATUS_MESSAGES[OPEN_SHAREFILE_CONNECTION]) != 0)
     {
@@ -213,7 +230,17 @@ long long distributiveComputingOverNetwork(void *args)
     t2.join();
     t3.join();
 
-    return 0;
+    socket.receive(res, sizeof(res) - 1);
+    if (n <= 0)
+    {
+        printf("Failed to receive final result from IP: %s\n", dis_args->IP);
+        socket.close();
+        return -1;
+    }
+
+    long long result = std::stoi(res);
+
+    return result;
 }
 
 long long distributiveComputingLocal(void *args)

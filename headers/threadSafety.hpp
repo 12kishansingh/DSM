@@ -13,19 +13,22 @@ struct SharedData
     int flag = 0; // Your status flag
 };
 // Shared data
-extern char shared_outpath[128];
-extern int_fast64_t sharedReceivedBytes;
 
-extern SharedData mesh_info;
+extern SharedData mesh_info_1;
+extern SharedData mesh_info_2;
+extern char shared_outpath[128];
+extern int_fast64_t processedBytes;
+extern bool isProcessing;
+
 
 struct commands_args
 {
     SharedData *mesh_info;
 };
 
-void wait();
+void wait(SharedData &data);
 
-void resume();
+void resume(SharedData &data);
 
 
 #endif // THREAD_SAFETY_H

@@ -26,10 +26,10 @@ void connection()
     std::thread server_thread(server_listener_thread_tcp, &s_args);
 
     // UI thread
-    struct commands_args c_args;
-    c_args.mesh_info = &mesh_info;
+     
+    
 
-    std::thread ui_thread(commands, &c_args);
+    std::thread ui_thread(commands, nullptr);
 
     // 3. Join threads
     server_thread.join();
