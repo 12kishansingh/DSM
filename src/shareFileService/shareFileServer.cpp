@@ -109,8 +109,12 @@ int receive_file(Socket *socket, int askclientShareFile)
         std::cerr << "Failed to receive filesize\n";
         return -1;
     }
-     
-    Shared_fileSize = filesize;
+
+    if (strcmp(folder, "train") == 0)
+    {
+        Shared_fileSize = filesize;
+        processedBytes = 0;
+    }
 
     char cwd[1024];
 
@@ -159,7 +163,7 @@ int receive_file(Socket *socket, int askclientShareFile)
         return -1;
     }
 
-    if(strcmp(folder, "train") == 0)
+    if (strcmp(folder, "train") == 0)
     {
         resume(mesh_info_2);
     }
@@ -209,10 +213,11 @@ int receive_file(Socket *socket, int askclientShareFile)
             ui.render(stats);
         }
 
-        processedBytes = received;
-         
+        if (strcmp(folder, "train") == 0)
+        {
+            processedBytes = received;
+        }
     }
-    
 
     if (askclientShareFile)
     {
@@ -230,7 +235,7 @@ int receive_file(Socket *socket, int askclientShareFile)
             std::cout << "File received successfully: " << shared_outpath
                       << " (" << filesize << " bytes)\n";
         }
-        
+
         if (strcmp(folder, "code") == 0)
         {
             resume(mesh_info_1);

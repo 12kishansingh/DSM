@@ -194,7 +194,6 @@ void compileCode()
 void *handle_distributive_systems(void *arg)
 {
     TCP *socket = (TCP *)arg;
-
     OPEN_RECEIVE_FILE_CONNECTION = 1;
 
     socket->sendData(
@@ -206,12 +205,10 @@ void *handle_distributive_systems(void *arg)
     // Wait for the client to finish sending the code file..
 
     wait(mesh_info_1);
-
     compileCode();
     // Waiting until , a small part of the file is received..
     wait(mesh_info_2);
     // Recieved the file, now we can start processing it in chunks and send the result back to client.
-
     const char *trainfilepath = "received_files/train/test.txt";
 
     int fd = open(trainfilepath, O_RDONLY);
@@ -229,7 +226,6 @@ void *handle_distributive_systems(void *arg)
         {
             break;
         }
-
         remaining = processedBytes - offset;
         int temp = distributiveComputing(offset, remaining, fd);
         final_result ^= temp;
