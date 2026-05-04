@@ -240,13 +240,13 @@ long long distributiveComputingOverNetwork(void *args)
         socket.close();
         return -1;
     }
-    
+
     res[valread] = '\0';
-    
+
     printf("Received result from %s: %s\n", dis_args->IP, res);
 
     long long result = std::stoi(res);
-   
+
     return result;
 }
 
@@ -442,7 +442,7 @@ long long distributiveComputingLocal(void *args)
         fprintf(stderr, "Invalid output: %s\n", output.c_str());
         return -1;
     }
-
+    printf("Local computation result: %lld\n", result);
     return result;
 }
 
@@ -450,12 +450,6 @@ long long distributiveComputingLocal(void *args)
 
 void handle_distributive_systems()
 {
-    sendRequest();
-
-    int totalConnections = findTotalConnections();
-
-    train_offset = (off_t *)malloc(sizeof(off_t) * totalConnections);
-    train_chunk_size = (int_fast64_t *)malloc(sizeof(int_fast64_t) * totalConnections);
 
     char codepath[128], trainfilepath[128];
 
@@ -466,6 +460,17 @@ void handle_distributive_systems()
     printf("Enter train file path: ");
     fgets(trainfilepath, sizeof(trainfilepath), stdin);
     trainfilepath[strcspn(trainfilepath, "\n")] = 0;
+
+    // Start Timer...
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    sendRequest();
+
+    int totalConnections = findTotalConnections();
+
+    train_offset = (off_t *)malloc(sizeof(off_t) * totalConnections);
+    train_chunk_size = (int_fast64_t *)malloc(sizeof(int_fast64_t) * totalConnections);
 
     divideFileIntoChunks(trainfilepath, totalConnections);
 
@@ -500,6 +505,17 @@ void handle_distributive_systems()
     {
         result ^= futures[i].get();
     }
+
+    // END TIMER
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // duration in milliseconds
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+    // print seconds + milliseconds
+    std::cout << "Execution Time: "
+              << duration.count() / 1000 << " sec "
+              << duration.count() % 1000 << " ms\n";
     printf("Final Result: %d\n", result);
     freeMemory();
 }
