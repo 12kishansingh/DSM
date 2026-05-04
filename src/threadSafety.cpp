@@ -5,6 +5,7 @@ SharedData mesh_info_2;
 char shared_outpath[128] = {0};
 int_fast64_t processedBytes = 0;
 bool isProcessing = true;
+int_fast64_t Shared_fileSize = 0;
 
 void wait(SharedData &data)
 {

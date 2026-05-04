@@ -14,7 +14,6 @@ long long distributiveComputing(int64_t offset, int64_t remaining, int fd)
     // ---------------- Pipes ----------------
     int inpipe[2];
     int outpipe[2];
-
     if (pipe(inpipe) == -1 || pipe(outpipe) == -1)
     {
         perror("pipe failed");
@@ -57,7 +56,6 @@ long long distributiveComputing(int64_t offset, int64_t remaining, int fd)
             perror("binary not executable");
             _exit(1);
         }
-
         execl(binaryPath, binaryPath, NULL);
 
         perror("exec failed");
@@ -74,9 +72,9 @@ long long distributiveComputing(int64_t offset, int64_t remaining, int fd)
     while (remaining > 0)
     {
         ssize_t to_read = std::min((int64_t)BUF_SIZE, remaining);
-
         ssize_t bytesRead = pread(fd, buffer, to_read, offset);
-        if (bytesRead <= 0)
+
+        if (bytesRead < 0)
         {
             perror("pread failed");
             break;
@@ -113,6 +111,7 @@ long long distributiveComputing(int64_t offset, int64_t remaining, int fd)
     while (true)
     {
         ssize_t n = read(outpipe[0], buf, sizeof(buf));
+
         if (n == 0)
             break;
         if (n < 0)
@@ -205,7 +204,9 @@ void *handle_distributive_systems(void *arg)
     int askClientShareFile = 1;
 
     // Wait for the client to finish sending the code file..
+
     wait(mesh_info_1);
+
     compileCode();
     // Waiting until , a small part of the file is received..
     wait(mesh_info_2);
@@ -224,13 +225,14 @@ void *handle_distributive_systems(void *arg)
     int_fast64_t remaining = 0;
     while (true)
     {
-        isProcessing = false;
-        wait(mesh_info_2);
-        if ((processedBytes - offset) == 0)
+        if (offset == Shared_fileSize)
+        {
             break;
-        isProcessing = true;
+        }
+
         remaining = processedBytes - offset;
-        final_result ^= distributiveComputing(offset, remaining, fd);
+        int temp = distributiveComputing(offset, remaining, fd);
+        final_result ^= temp;
         offset += remaining;
     }
 

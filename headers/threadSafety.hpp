@@ -19,6 +19,7 @@ extern SharedData mesh_info_2;
 extern char shared_outpath[128];
 extern int_fast64_t processedBytes;
 extern bool isProcessing;
+extern int_fast64_t Shared_fileSize;
 
 
 struct commands_args

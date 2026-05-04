@@ -109,6 +109,8 @@ int receive_file(Socket *socket, int askclientShareFile)
         std::cerr << "Failed to receive filesize\n";
         return -1;
     }
+     
+    Shared_fileSize = filesize;
 
     char cwd[1024];
 
@@ -157,9 +159,9 @@ int receive_file(Socket *socket, int askclientShareFile)
         return -1;
     }
 
-    if(strcmp(folder, "test") == 0)
+    if(strcmp(folder, "train") == 0)
     {
-         resume(mesh_info_2);
+        resume(mesh_info_2);
     }
 
     char buffer[BLOCK_SIZE_];
@@ -207,19 +209,10 @@ int receive_file(Socket *socket, int askclientShareFile)
             ui.render(stats);
         }
 
-        const int threshold = 65536; // 64KB
-
-        if ((strcmp(folder, "test") == 0) && ((received - processedBytes >= threshold) || (received == filesize)) && !isProcessing)
-        {
-            processedBytes = received;
-            resume(mesh_info_2);
-        }
+        processedBytes = received;
+         
     }
-
-    while (isProcessing)
-        ;
-
-    resume(mesh_info_2);
+    
 
     if (askclientShareFile)
     {
@@ -237,7 +230,7 @@ int receive_file(Socket *socket, int askclientShareFile)
             std::cout << "File received successfully: " << shared_outpath
                       << " (" << filesize << " bytes)\n";
         }
-
+        
         if (strcmp(folder, "code") == 0)
         {
             resume(mesh_info_1);
