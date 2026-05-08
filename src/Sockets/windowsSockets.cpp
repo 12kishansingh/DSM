@@ -9,7 +9,7 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-char client_ip[INET_ADDRSTRLEN] = {0};
+char client_ip[IP_SIZE] = {0};
 
 Socket::Socket()
 {
@@ -27,7 +27,7 @@ Socket::Socket(socket_t fd)
 
 void Socket::setIpFromSockaddr(struct sockaddr_in *address)
 {
-    inet_ntop(AF_INET, &(address->sin_addr), client_ip, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &(address->sin_addr), client_ip, IP_SIZE);
 }
 
 int Socket::acceptConnection(int server_fd)
@@ -71,23 +71,51 @@ bool Socket::connect_socket(const char *ip)
 int Socket::setupSocket()
 {
     struct sockaddr_in address;
+
     int opt = 1;
 
-    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (const char *)&opt, sizeof(opt));
-
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(8080);
-
-    if (bind(sockfd, (struct sockaddr *)&address, sizeof(address)) < 0)
+    // Allow socket reuse
+    if (setsockopt(
+            sockfd,
+            SOL_SOCKET,
+            SO_REUSEADDR,
+            (const char *)&opt,
+            sizeof(opt)) == SOCKET_ERROR)
     {
-        std::cerr << "bind failed: " << WSAGetLastError() << std::endl;
+        std::cerr << "setsockopt failed: "
+                  << WSAGetLastError()
+                  << std::endl;
+
         return -1;
     }
 
-    if (listen(sockfd, 10) < 0)
+    // Clear structure
+    memset(&address, 0, sizeof(address));
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    // Bind socket
+    if (bind(
+            sockfd,
+            (struct sockaddr *)&address,
+            sizeof(address)) == SOCKET_ERROR)
     {
-        perror("listen");
+        std::cerr << "bind failed: "
+                  << WSAGetLastError()
+                  << std::endl;
+
+        return -1;
+    }
+
+    // Start listening
+    if (listen(sockfd, 10) == SOCKET_ERROR)
+    {
+        std::cerr << "listen failed: "
+                  << WSAGetLastError()
+                  << std::endl;
+
         return -1;
     }
 
