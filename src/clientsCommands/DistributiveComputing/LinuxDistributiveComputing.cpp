@@ -1,3 +1,5 @@
+#ifdef __linux__
+
 #include "../../../headers/clientsCommand.hpp"
 #include "../../../headers/shareFile.hpp"
 #include "../../../headers/threadSafety.hpp"
@@ -519,3 +521,5 @@ void handle_distributive_systems()
     printf("Final Result: %d\n", result);
     freeMemory();
 }
+
+#endif

@@ -1,8 +1,10 @@
-#include "../../headers/serverService.hpp"
-#include "../../headers/Status_codes.hpp"
-#include "../../headers/sockets.hpp"
-#include "../../headers/shareFile.hpp"
-#include "../../headers/threadSafety.hpp"
+#ifdef __linux__
+
+#include "../../../headers/serverService.hpp"
+#include "../../../headers/Status_codes.hpp"
+#include "../../../headers/sockets.hpp"
+#include "../../../headers/shareFile.hpp"
+#include "../../../headers/threadSafety.hpp"
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <atomic>
@@ -240,3 +242,5 @@ void *handle_distributive_systems(void *arg)
     delete socket;
     return NULL;
 }
+
+#endif
